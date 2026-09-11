@@ -3,122 +3,109 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Aliens : MonoBehaviour
+public class Clientes : MonoBehaviour
 {
-    [Header("SimulaciÃ³n")]
-    public int initialHumans = 10;
-    public int initialAliens = 10;
-    public int actualHumans;
-    public int actualAliens;
-    public int abductionsPerDay = 2;
+
+    [Header("Simulación")]
+    public int initialClients = 0;
+    public int actualClients;
+    public int EntradaPerMin = 3;
+    public int SalidaPerMin = 1;
 
     [Header("Tiempo")]
-    public float secondsPerDay = 1f;
-    private int day = 0;
+    public float secondsPerMin = 3f;
+    private int min = 0;
     private float timer = 0;
 
     [Header("Visual")]
-    public GameObject humanPrefab;
-    public GameObject alienPrefab;
-    public Transform cityArea;
-    private List<GameObject> humanObjects = new List<GameObject>();
-    private List<GameObject> alienObjects = new List<GameObject>();
+    public GameObject clientPrefab;
+    public Transform shopArea;  
+    public float spacing = 1f; //Espacio de los clientes
+    public float rowSpacing = 1.5f; //Espacio de las filas
+    public int clientsPerRow = 15; // Cantidad de clientes en la fila
+    private List<GameObject> clientObjects = new List<GameObject>();
+
+    //posicion inicial (preguntar al profe)
+    public float startX = 5f;     
+    public float startY = -4f;
+
 
     void Start()
     {
-        actualAliens = initialAliens;
-        actualHumans = initialHumans;
-        DrawCity();
-        Debug.Log("Dia " + day + ": " + actualHumans + " humanos y " + actualAliens + " aliens");
+        actualClients = initialClients;
+        DrawShop();
+        Debug.Log("min " + min + ": " + actualClients + " Clientes");
     }
 
-    void DrawCity()
-    {
-        for (int i = 0; i < actualHumans; i++)
-        {
-            Vector3 randomPos = new Vector3(
-                UnityEngine.Random.Range(-cityArea.localScale.x / 2, cityArea.localScale.x / 2),
-                UnityEngine.Random.Range(-cityArea.localScale.y / 2, cityArea.localScale.y / 2),
-                0
-            );
 
-            Vector3 worldPos = cityArea.position + randomPos;
-
-            GameObject human = Instantiate(humanPrefab, worldPos, Quaternion.identity);
-            humanObjects.Add(human);
-        }
-
-        for (int i = 0; i < actualAliens; i++)
-        {
-            Vector3 randomPos = new Vector3(
-                UnityEngine.Random.Range(-cityArea.localScale.x / 2, cityArea.localScale.x / 2),
-                UnityEngine.Random.Range(-cityArea.localScale.y / 2, cityArea.localScale.y / 2),
-                0
-            );
-
-            Vector3 worldPos = cityArea.position + randomPos;
-
-            GameObject alien = Instantiate(alienPrefab, worldPos, Quaternion.identity);
-            alienObjects.Add(alien);
-        }
-    }
 
     void Update()
     {
         timer += Time.deltaTime;
 
-        if (timer >= secondsPerDay)
+        if (timer >= secondsPerMin)
         {
             timer = 0;
-            SimulateDay();
+            SimulateMinute();
         }
     }
 
-    void SimulateDay()
+    void SimulateMinute()
     {
-        if (actualHumans <= 0 || actualAliens <= 0) return;
 
-        day++;
+        min++;
 
-        int abductions = actualAliens * abductionsPerDay;
+        int salida;
 
-        if (abductions > actualHumans) abductions = actualHumans;
-
-        actualHumans -= abductions;
-
-        if (day % 3 == 0 && actualAliens > 0)
+        // Condicion para no restar al inicio
+        if (actualClients > 0)
         {
-            actualAliens--;
-            Debug.Log("Alien muerto");
+            salida = SalidaPerMin;
+        }
+        else
+        {
+            salida = 0;
         }
 
-        ClearCity();
-        DrawCity();
+        actualClients += EntradaPerMin;
+        actualClients -= salida;
 
-        Debug.Log("Dia " + day + ": " + actualHumans + " humanos y " + actualAliens + " aliens");
+        if (actualClients < 0) actualClients = 0;
 
-        if (actualHumans <= 0)
-        {
-            Debug.Log("La humanidad ha caido");
-        }
-        else if (actualAliens <= 0)
-        {
-            Debug.Log("La humanidad ha ganado la guerra");
-        }
+        ClearShop();
+        DrawShop();
+
+        Debug.Log("Minuto " + min + ": llegan " + EntradaPerMin + ", Cliente atendido " + salida + " , Total de Clientes:  " + actualClients + ", actualClients");
     }
 
-    private void ClearCity()
+    void DrawShop()
     {
-        foreach (GameObject human in humanObjects)
+        for (int i = 0; i < actualClients; i++)
         {
-            Destroy(human);
-        }
-        foreach (GameObject alien in alienObjects)
-        {
-            Destroy(alien);
+            //Fila y columna
+            int row = i / clientsPerRow; // 0 / 15
+            int col = i % clientsPerRow; // 0 % 15
+
+            //Lugar o coordenadas
+            float x = startX - col * spacing;
+            float y = startY + row * rowSpacing; ;
+
+            Vector3 rowPos = new Vector3(x, y, 0f);
+            Vector3 worldPos = shopArea.position + rowPos;
+
+            GameObject client = Instantiate(clientPrefab, worldPos, Quaternion.identity);
+            clientObjects.Add(client);
         }
 
-        humanObjects.Clear();
-        alienObjects.Clear();
+    }
+
+    private void ClearShop()
+    {
+        foreach (GameObject client in clientObjects)
+        {
+            Destroy(client);
+        }
+        clientObjects.Clear();
+
     }
 }
